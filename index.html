@@ -4,14 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitGlow - GitHub Commit Visualizer</title>
+    <title>GitGlow - Animated Commit Visualizer</title>
 
-    <!-- Font Inter khas UI Modern -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;600&display=swap"
+        rel="stylesheet">
 
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
@@ -22,8 +22,8 @@
             --text-main: #f0f6fc;
             --text-muted: #8b949e;
             --gh-green: #238636;
-            --gh-green-hover: #2ea043;
             --gh-accent: #3fb950;
+            --gh-cyan: #58a6ff;
         }
 
         * {
@@ -33,63 +33,45 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Inter', sans-serif;
             background-color: var(--bg-dark);
             color: var(--text-main);
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
             padding: 40px 20px;
+            display: flex;
+            justify-content: center;
         }
 
         .container {
             width: 100%;
-            max-width: 900px;
+            max-width: 950px;
         }
 
-        /* Header & Branding */
         header {
             text-align: center;
-            margin-bottom: 32px;
+            margin-bottom: 28px;
         }
 
         header h1 {
             font-size: 2.2rem;
             font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
             color: var(--text-main);
         }
 
         header p {
             color: var(--text-muted);
             font-size: 0.95rem;
-            margin-top: 8px;
+            margin-top: 6px;
         }
 
-        .badge {
-            background: rgba(63, 185, 80, 0.15);
-            color: var(--gh-accent);
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 2px 8px;
-            border-radius: 12px;
-            border: 1px solid rgba(63, 185, 80, 0.3);
-            vertical-align: middle;
-        }
-
-        /* Search Box Card */
+        /* Search Box */
         .search-card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 12px;
-            padding: 20px;
+            padding: 16px 20px;
             display: flex;
             gap: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
             margin-bottom: 24px;
         }
 
@@ -102,128 +84,112 @@
             border-radius: 8px;
             font-size: 0.95rem;
             outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .search-card input:focus {
-            border-color: #58a6ff;
         }
 
         .search-card button {
             background-color: var(--gh-green);
-            color: #ffffff;
+            color: #fff;
             border: none;
             padding: 12px 24px;
             border-radius: 8px;
             font-weight: 600;
-            font-size: 0.95rem;
             cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        .search-card button:hover {
-            background-color: var(--gh-green-hover);
         }
 
         /* Stats Grid */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 16px;
             margin-bottom: 24px;
             display: none;
-            /* Muncul otomatis saat ada data */
         }
 
         .stat-card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 10px;
-            padding: 16px 20px;
+            padding: 16px;
         }
 
         .stat-card .label {
             color: var(--text-muted);
-            font-size: 0.85rem;
-            font-weight: 500;
+            font-size: 0.8rem;
         }
 
         .stat-card .value {
-            font-size: 1.6rem;
+            font-size: 1.5rem;
             font-weight: 700;
-            color: var(--text-main);
-            margin-top: 6px;
+            margin-top: 4px;
         }
 
-        /* Chart Container Card */
-        .chart-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            margin-bottom: 24px;
-            display: none;
-        }
-
-        .chart-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .chart-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        /* Recent Commits List */
-        .commits-card {
+        /* Interactive Player Controls */
+        .player-card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 12px;
             padding: 20px;
+            margin-bottom: 24px;
             display: none;
         }
 
-        .commits-card h3 {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 16px;
-            color: var(--text-main);
-        }
-
-        .commit-item {
+        .player-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+            margin-bottom: 12px;
         }
 
-        .commit-item:last-child {
-            border-bottom: none;
+        .play-btn {
+            background: var(--gh-green);
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .commit-msg {
-            font-weight: 500;
-            font-size: 0.9rem;
-            color: #58a6ff;
+        .timeline-slider {
+            width: 100%;
+            accent-color: var(--gh-accent);
+            cursor: pointer;
         }
 
-        .commit-meta {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 4px;
+        .current-commit-box {
+            background: #010409;
+            border: 1px dashed var(--card-border);
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 14px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: var(--gh-accent);
         }
 
-        .commit-date {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            background: #21262d;
-            padding: 4px 10px;
-            border-radius: 6px;
+        /* Charts Row */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+            display: none;
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .chart-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 14px;
         }
 
         #loadingText {
@@ -238,50 +204,56 @@
 <body>
 
     <div class="container">
-        <!-- Header -->
         <header>
-            <h1>✨ GitGlow <span class="badge">v1.0</span></h1>
-            <p>Visualisator aktivitas commit GitHub dengan gaya dark mode elegan</p>
+            <h1>✨ GitGlow Replay</h1>
+            <p>Simulasikan dan putar ulang garis waktu perkembangan kodinganmu</p>
         </header>
 
-        <!-- Search Box -->
         <div class="search-card">
             <input type="text" id="repoInput"
                 placeholder="Ketik username/repository (contoh: alexchris06-bot/SaringPesan)">
-            <button onclick="fetchCommits()">Visualisasikan</button>
+            <button onclick="fetchData()">Muat Visualisasi</button>
         </div>
 
-        <!-- Status Loading / Error -->
-        <div id="loadingText">Sedang menarik data dari GitHub API...</div>
+        <div id="loadingText">Sedang mengunduh data riwayat dari GitHub API...</div>
 
-        <!-- Stats Cards -->
         <div class="stats-grid" id="statsGrid">
             <div class="stat-card">
-                <div class="label">Total Commit Terambil</div>
-                <div class="value" id="statTotalCommits">0</div>
+                <div class="label">Total Commit</div>
+                <div class="value" id="statCommits">0</div>
             </div>
             <div class="stat-card">
-                <div class="label">Hari Aktif Koding</div>
-                <div class="value" id="statActiveDays">0</div>
+                <div class="label">Bahasa Utama</div>
+                <div class="value" id="statLanguage" style="font-size: 1.1rem; padding-top: 6px;">-</div>
             </div>
             <div class="stat-card">
-                <div class="label">Commit Terakhir</div>
-                <div class="value" id="statLastDate" style="font-size: 1.1rem; padding-top: 6px;">-</div>
+                <div class="label">Tanggal Dibuat</div>
+                <div class="value" id="statCreated" style="font-size: 1rem; padding-top: 6px;">-</div>
             </div>
         </div>
 
-        <!-- Chart Card -->
-        <div class="chart-card" id="chartCard">
-            <div class="chart-header">
-                <div class="chart-title" id="chartTitle">Aktivitas Commit</div>
+        <!-- Controls Replay -->
+        <div class="player-card" id="playerCard">
+            <div class="player-header">
+                <button class="play-btn" id="playBtn" onclick="togglePlay()">▶ Play Replay</button>
+                <span style="font-size: 0.85rem; color: var(--text-muted);" id="stepIndicator">Commit 0 / 0</span>
             </div>
-            <canvas id="commitChart"></canvas>
+            <input type="range" id="timelineSlider" class="timeline-slider" min="0" max="0" value="0"
+                oninput="onSliderChange(this.value)">
+            <div class="current-commit-box" id="commitBox">Tekan tombol Play untuk memulai simulasi pertumbuhan kode...
+            </div>
         </div>
 
-        <!-- Recent Commits Timeline -->
-        <div class="commits-card" id="commitsCard">
-            <h3>📌 Commit Terbaru</h3>
-            <div id="commitsList"></div>
+        <!-- Charts -->
+        <div class="charts-grid" id="chartsGrid">
+            <div class="chart-card">
+                <div class="chart-title">📈 Kurva Akumulasi Commit</div>
+                <canvas id="growthChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">📊 Tech Stack</div>
+                <canvas id="langChart"></canvas>
+            </div>
         </div>
     </div>
 

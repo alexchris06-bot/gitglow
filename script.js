@@ -1,137 +1,186 @@
-let myChart = null;
+let commitsData = [];
+let growthChart = null;
+let langChart = null;
+let isPlaying = false;
+let playInterval = null;
+let currentStep = 0;
 
-async function fetchCommits() {
+async function fetchData() {
     const repoInput = document.getElementById('repoInput').value.trim();
     const loadingText = document.getElementById('loadingText');
-    const statsGrid = document.getElementById('statsGrid');
-    const chartCard = document.getElementById('chartCard');
-    const commitsCard = document.getElementById('commitsCard');
 
     if (!repoInput) {
-        alert("Masukkan format username/repository terlebih dahulu!");
+        alert("Masukkan nama repository!");
         return;
     }
 
-    // Tampilkan loading & sembunyikan card lama
     loadingText.style.display = 'block';
-    statsGrid.style.display = 'none';
-    chartCard.style.display = 'none';
-    commitsCard.style.display = 'none';
+    resetUI();
 
     try {
-        const response = await fetch(`https://api.github.com/repos/${repoInput}/commits?per_page=100`);
+        // Take data commit & data bahasa secara paralel
+        const [commitsRes, repoRes, langRes] = await Promise.all([
+            fetch(`https://api.github.com/repos/${repoInput}/commits?per_page=100`),
+            fetch(`https://api.github.com/repos/${repoInput}`),
+            fetch(`https://api.github.com/repos/${repoInput}/languages`)
+        ]);
 
-        if (!response.ok) {
-            throw new Error("Repository tidak ditemukan atau bernilai private!");
-        }
+        if (!commitsRes.ok) throw new Error("Repository tidak ditemukan!");
 
-        const data = await response.json();
+        const commits = await commitsRes.json();
+        const repoInfo = await repoRes.json();
+        const languages = await langRes.json();
+
         loadingText.style.display = 'none';
 
-        // 1. Olah Data Statistik & Grafik
-        const commitCounts = {};
-        data.forEach(item => {
-            const date = item.commit.author.date.split('T')[0];
-            commitCounts[date] = (commitCounts[date] || 0) + 1;
-        });
+        // Urutkan commit dari yang paling LAMA ke paling BARU untuk replay
+        commitsData = commits.reverse();
 
-        const dates = Object.keys(commitCounts).reverse();
-        const counts = Object.values(commitCounts).reverse();
+        // Render Stats
+        document.getElementById('statCommits').innerText = commitsData.length;
+        document.getElementById('statCreated').innerText = new Date(repoInfo.created_at).toLocaleDateString('id-ID');
 
-        // 2. Update Stats Cards
-        document.getElementById('statTotalCommits').innerText = data.length;
-        document.getElementById('statActiveDays').innerText = dates.length;
-        document.getElementById('statLastDate').innerText = dates[dates.length - 1] || '-';
-        statsGrid.style.display = 'grid';
+        const topLang = Object.keys(languages)[0] || 'Plain Text';
+        document.getElementById('statLanguage').innerText = topLang;
 
-        // 3. Render Chart
-        document.getElementById('chartTitle').innerText = `Aktivitas Commit: ${repoInput}`;
-        renderChart(dates, counts);
-        chartCard.style.display = 'block';
+        // Show Elements
+        document.getElementById('statsGrid').style.display = 'grid';
+        document.getElementById('playerCard').style.display = 'block';
+        document.getElementById('chartsGrid').style.display = 'grid';
 
-        // 4. Render Commit List (5 Terbaru)
-        renderCommitsList(data.slice(0, 5));
-        commitsCard.style.display = 'block';
+        // Configure Slider
+        const slider = document.getElementById('timelineSlider');
+        slider.max = commitsData.length - 1;
+        slider.value = commitsData.length - 1;
 
-    } catch (error) {
+        // Build Initial Charts
+        initGrowthChart();
+        renderLangChart(languages);
+
+        // Jump to last state
+        updateStep(commitsData.length - 1);
+
+    } catch (err) {
         loadingText.style.display = 'none';
-        alert(`Error: ${error.message}`);
+        alert(`Error: ${err.message}`);
     }
 }
 
-function renderChart(labels, counts) {
-    const ctx = document.getElementById('commitChart').getContext('2d');
+function initGrowthChart() {
+    const ctx = document.getElementById('growthChart').getContext('2d');
 
-    if (myChart) {
-        myChart.destroy();
-    }
+    if (growthChart) growthChart.destroy();
 
-    // Membuat efek gradient warna hijau khas GitHub
-    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, '#3fb950');
-    gradient.addColorStop(1, '#238636');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+    gradient.addColorStop(0, 'rgba(63, 185, 80, 0.4)');
+    gradient.addColorStop(1, 'rgba(63, 185, 80, 0.0)');
 
-    myChart = new Chart(ctx, {
-        type: 'bar',
+    growthChart = new Chart(ctx, {
+        type: 'line',
         data: {
-            labels: labels,
+            labels: [],
             datasets: [{
-                label: 'Jumlah Commit',
-                data: counts,
+                label: 'Akumulasi Commit',
+                data: [],
+                borderColor: '#3fb950',
                 backgroundColor: gradient,
-                borderRadius: 6, // Membulatkan sudut atas batang grafik
-                borderSkipped: false,
-                barPercentage: 0.6
+                fill: true,
+                tension: 0.4, // Kurva mulus
+                pointRadius: 4,
+                pointBackgroundColor: '#3fb950'
             }]
         },
         options: {
             responsive: true,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: '#161b22',
-                    titleColor: '#f0f6fc',
-                    bodyColor: '#3fb950',
-                    borderColor: '#30363d',
-                    borderWidth: 1,
-                    padding: 12,
-                    displayColors: false
-                }
-            },
+            plugins: { legend: { display: false } },
             scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { color: 'rgba(48, 54, 61, 0.5)' },
-                    ticks: { color: '#8b949e', stepSize: 1 }
-                },
-                x: {
-                    grid: { display: false },
-                    ticks: { color: '#8b949e' }
-                }
+                y: { beginAtZero: true, grid: { color: '#30363d' }, ticks: { color: '#8b949e', stepSize: 1 } },
+                x: { grid: { display: false }, ticks: { color: '#8b949e' } }
             }
         }
     });
 }
 
-function renderCommitsList(commits) {
-    const listContainer = document.getElementById('commitsList');
-    listContainer.innerHTML = '';
+function renderLangChart(languages) {
+    const ctx = document.getElementById('langChart').getContext('2d');
+    if (langChart) langChart.destroy();
 
-    commits.forEach(item => {
-        const msg = item.commit.message;
-        const author = item.commit.author.name;
-        const date = new Date(item.commit.author.date).toLocaleDateString('id-ID', {
-            day: 'numeric', month: 'short', year: 'numeric'
-        });
+    const labels = Object.keys(languages);
+    const data = Object.values(languages);
 
-        listContainer.innerHTML += `
-      <div class="commit-item">
-        <div>
-          <div class="commit-msg">${msg}</div>
-          <div class="commit-meta">oleh <b>${author}</b></div>
-        </div>
-        <div class="commit-date">${date}</div>
-      </div>
-    `;
+    langChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: ['#238636', '#58a6ff', '#f1e05a', '#e34c26', '#563d7c'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom', labels: { color: '#8b949e', font: { size: 10 } } } }
+        }
     });
+}
+
+function updateStep(step) {
+    currentStep = parseInt(step);
+    document.getElementById('timelineSlider').value = currentStep;
+    document.getElementById('stepIndicator').innerText = `Commit ${currentStep + 1} / ${commitsData.length}`;
+
+    const currentCommit = commitsData[currentStep];
+    const dateStr = new Date(currentCommit.commit.author.date).toLocaleDateString('id-ID', {
+        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+
+    document.getElementById('commitBox').innerHTML = `
+    > <b>[${dateStr}]</b><br>
+    "${currentCommit.commit.message}"<br>
+    <small style="color: #8b949e;">— ${currentCommit.commit.author.name}</small>
+  `;
+
+    // Update Line Chart Progressively
+    const activeSubSet = commitsData.slice(0, currentStep + 1);
+    growthChart.data.labels = activeSubSet.map((_, idx) => `#${idx + 1}`);
+    growthChart.data.datasets[0].data = activeSubSet.map((_, idx) => idx + 1);
+    growthChart.update('none'); // smooth update
+}
+
+function togglePlay() {
+    const btn = document.getElementById('playBtn');
+
+    if (isPlaying) {
+        clearInterval(playInterval);
+        isPlaying = false;
+        btn.innerText = '▶ Play Replay';
+    } else {
+        if (currentStep >= commitsData.length - 1) currentStep = 0;
+        isPlaying = true;
+        btn.innerText = '⏸ Pause';
+
+        playInterval = setInterval(() => {
+            if (currentStep < commitsData.length - 1) {
+                currentStep++;
+                updateStep(currentStep);
+            } else {
+                clearInterval(playInterval);
+                isPlaying = false;
+                btn.innerText = '🔄 Replay';
+            }
+        }, 800); // Kecepatan pergantian commit (800ms)
+    }
+}
+
+function onSliderChange(val) {
+    if (isPlaying) togglePlay();
+    updateStep(val);
+}
+
+function resetUI() {
+    if (isPlaying) togglePlay();
+    document.getElementById('statsGrid').style.display = 'none';
+    document.getElementById('playerCard').style.display = 'none';
+    document.getElementById('chartsGrid').style.display = 'none';
 }
