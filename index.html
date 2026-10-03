@@ -23,7 +23,6 @@
             --text-muted: #8b949e;
             --gh-green: #238636;
             --gh-accent: #3fb950;
-            --gh-cyan: #58a6ff;
         }
 
         * {
@@ -64,7 +63,6 @@
             margin-top: 6px;
         }
 
-        /* Search Box */
         .search-card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
@@ -96,7 +94,6 @@
             cursor: pointer;
         }
 
-        /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -123,7 +120,6 @@
             margin-top: 4px;
         }
 
-        /* Interactive Player Controls */
         .player-card {
             background: var(--card-bg);
             border: 1px solid var(--card-border);
@@ -170,7 +166,6 @@
             color: var(--gh-accent);
         }
 
-        /* Charts Row */
         .charts-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
@@ -211,7 +206,7 @@
 
         <div class="search-card">
             <input type="text" id="repoInput"
-                placeholder="Ketik username/repository (contoh: alexchris06-bot/SaringPesan)">
+                placeholder="Ketik username/repository (contoh: alexchris06-bot/saring-pesan)">
             <button onclick="fetchData()">Muat Visualisasi</button>
         </div>
 
@@ -232,7 +227,6 @@
             </div>
         </div>
 
-        <!-- Controls Replay -->
         <div class="player-card" id="playerCard">
             <div class="player-header">
                 <button class="play-btn" id="playBtn" onclick="togglePlay()">▶ Play Replay</button>
@@ -240,11 +234,9 @@
             </div>
             <input type="range" id="timelineSlider" class="timeline-slider" min="0" max="0" value="0"
                 oninput="onSliderChange(this.value)">
-            <div class="current-commit-box" id="commitBox">Tekan tombol Play untuk memulai simulasi pertumbuhan kode...
-            </div>
+            <div class="current-commit-box" id="commitBox">Tekan tombol Play untuk memulai simulasi...</div>
         </div>
 
-        <!-- Charts -->
         <div class="charts-grid" id="chartsGrid">
             <div class="chart-card">
                 <div class="chart-title">📈 Kurva Akumulasi Commit</div>

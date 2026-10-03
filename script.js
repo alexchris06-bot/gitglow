@@ -18,7 +18,6 @@ async function fetchData() {
     resetUI();
 
     try {
-        // Take data commit & data bahasa secara paralel
         const [commitsRes, repoRes, langRes] = await Promise.all([
             fetch(`https://api.github.com/repos/${repoInput}/commits?per_page=100`),
             fetch(`https://api.github.com/repos/${repoInput}`),
@@ -33,31 +32,24 @@ async function fetchData() {
 
         loadingText.style.display = 'none';
 
-        // Urutkan commit dari yang paling LAMA ke paling BARU untuk replay
         commitsData = commits.reverse();
 
-        // Render Stats
         document.getElementById('statCommits').innerText = commitsData.length;
         document.getElementById('statCreated').innerText = new Date(repoInfo.created_at).toLocaleDateString('id-ID');
 
         const topLang = Object.keys(languages)[0] || 'Plain Text';
         document.getElementById('statLanguage').innerText = topLang;
 
-        // Show Elements
         document.getElementById('statsGrid').style.display = 'grid';
         document.getElementById('playerCard').style.display = 'block';
         document.getElementById('chartsGrid').style.display = 'grid';
 
-        // Configure Slider
         const slider = document.getElementById('timelineSlider');
         slider.max = commitsData.length - 1;
         slider.value = commitsData.length - 1;
 
-        // Build Initial Charts
         initGrowthChart();
         renderLangChart(languages);
-
-        // Jump to last state
         updateStep(commitsData.length - 1);
 
     } catch (err) {
@@ -68,7 +60,6 @@ async function fetchData() {
 
 function initGrowthChart() {
     const ctx = document.getElementById('growthChart').getContext('2d');
-
     if (growthChart) growthChart.destroy();
 
     const gradient = ctx.createLinearGradient(0, 0, 0, 250);
@@ -85,7 +76,7 @@ function initGrowthChart() {
                 borderColor: '#3fb950',
                 backgroundColor: gradient,
                 fill: true,
-                tension: 0.4, // Kurva mulus
+                tension: 0.4,
                 pointRadius: 4,
                 pointBackgroundColor: '#3fb950'
             }]
@@ -141,11 +132,10 @@ function updateStep(step) {
     <small style="color: #8b949e;">— ${currentCommit.commit.author.name}</small>
   `;
 
-    // Update Line Chart Progressively
     const activeSubSet = commitsData.slice(0, currentStep + 1);
     growthChart.data.labels = activeSubSet.map((_, idx) => `#${idx + 1}`);
     growthChart.data.datasets[0].data = activeSubSet.map((_, idx) => idx + 1);
-    growthChart.update('none'); // smooth update
+    growthChart.update('none');
 }
 
 function togglePlay() {
@@ -169,7 +159,7 @@ function togglePlay() {
                 isPlaying = false;
                 btn.innerText = '🔄 Replay';
             }
-        }, 800); // Kecepatan pergantian commit (800ms)
+        }, 800);
     }
 }
 
